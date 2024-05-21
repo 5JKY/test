@@ -1,0 +1,22 @@
+========== Numerical Method Parameters listing==========
+
+phi == 1/2 and gamma == 1/2:
+method_name = 'Crank–Nicolson'
+
+phi == 0 and gamma == 1/2:
+method_name = 'ETCS'
+
+phi == 0 and gamma == 1:
+method_name = 'ETBS'
+
+phi == 0 and gamma == 0:
+method_name = 'ETFS (upwind explicit)'
+        
+phi == 1 and gamma == 1/2:
+method_name = 'ITCS'
+
+phi == 1 and gamma == 1:
+method_name = 'ITBS'
+
+phi == 1 and gamma == 0:
+method_name = 'ITFS(upwind implicit)'

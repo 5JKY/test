@@ -1,0 +1,489 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+from scipy.sparse.linalg import spsolve, eigs
+
+
+def metro_accept(beta_U_arr):
+    Aab = np.ones(beta_U_arr.size-1)
+    Aba = np.ones(beta_U_arr.size-1)
+    Aac = np.ones(beta_U_arr.size-1)
+    Aca = np.ones(beta_U_arr.size-1)
+
+    right_difference = beta_U_arr[1: ]-beta_U_arr[ :-1]
+    # if U_i+1 > Ui: A_i,i+1=exp(-diff), A_i+1,i =1
+    plus_mask = right_difference > 0
+    Aab[plus_mask == True] = np.exp(-right_difference[plus_mask == True])
+    # else: A_i,i+1=1, A_i+1,i =exp(-diff)
+    Aba[plus_mask == False] = np.exp(right_difference[plus_mask == False])
+
+    # left_difference = beta_U_arr[: -1]-beta_U_arr[1: ]
+    left_difference = -right_difference
+    # if U_i-1 < Ui: A_i,i-1 =1, A_i-1,i =exp(diff)
+    minus_mask = left_difference < 0
+    Aca[minus_mask == True] = np.exp(left_difference[minus_mask == True])
+    # else: A_i,i-1 =exp(-diff), A_i-1,i =1
+    Aac[minus_mask == False] = np.exp(-left_difference[minus_mask == False])
+
+    return Aab, Aba, Aac, Aca
+
+def criteria_accept(beta_U_arr):
+    right_difference = beta_U_arr[1: ]-beta_U_arr[ :-1]
+    # left_difference = beta_U_arr[: -1]-beta_U_arr[1: ]
+    left_difference = -right_difference
+    Aab = 1.0/(np.exp(right_difference)+1.0)
+    Aba = 1.0/(np.exp(-right_difference)+1.0)
+    Aac = 1.0/(np.exp(left_difference)+1.0)
+    Aca = 1.0/(np.exp(-left_difference)+1.0)
+    return Aab, Aba, Aac, Aca
+
+
+class TransferMatrix_ReRe:
+    def __init__(self, hx, x_arr, beta_U, criteria=0):
+        """
+        criteria == 0:  Original Metropolis Acceptance Criterion
+        criteria == 1:  Analytical Acceptance Criterion
+
+        Transfer matrix won't use time step size ht
+        """
+        self.hx = hx
+        self.x_arr = x_arr
+        # beta_U is a function, can be called by beta_U(arr)
+        self.beta_U = beta_U
+        self.criteria = criteria
+        self.trans_mat = self.assemble_matrix()
+        self.eig6_w, self.eig6_v = eigs(self.trans_mat)
+        self.steady_state = 1.0/(hx*np.sum(self.eig6_v[:, 0]))*self.eig6_v[:, 0]
+        self.relax_timescale = -1.0/np.log(self.eig6_w[1])
+
+    def assemble_matrix(self):
+        beta_U_arr = self.beta_U(self.x_arr)
+        if self.criteria == 0: # Typical Metropolis Acceptance Probability
+            Aab, Aba, Aac, Aca = metro_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca, k=-1)
+                + np.diag(main_diag, k=0)
+                + np.diag(Aba, k=1)
+                )
+            return trans_mat
+        
+        elif self.criteria == 1: # Analytical Acceptance Probability
+            Aab, Aba, Aac, Aca = criteria_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca, k=-1)
+                + np.diag(main_diag, k=0)
+                + np.diag(Aba, k=1)
+                )
+            return trans_mat
+        
+    def plot_eigenvalues(self):
+        # Compute eigenvalues
+        num_eigenvalues = self.x_arr.size
+        eigenvalues, eigenvectors_mat = eigs(self.trans_mat, k=num_eigenvalues)
+
+        # Plot eigenvalues
+        plt.scatter(np.real(eigenvalues), np.imag(eigenvalues), color='blue', label='Eigenvalues')
+        plt.xlabel('Real Part')
+        plt.ylabel('Imaginary Part')
+
+        # Plot Unit circle
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='red', label='Unit Circle')
+
+        plt.title('Complex Eigenvalues and Unit Circle (ReRe)')
+        plt.grid(True)
+        plt.axis('equal')  # Ensure aspect ratio is equal
+        plt.legend()
+        plt.show()
+
+    def evolve_pi(self, pi_init, Tf):
+        pi_prod = np.copy(pi_init)
+
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        for n in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+        
+        return pi_prod
+    
+    def plot_evolution_pi(self, pi_init, Tf, freq=10):
+        pi_prod = np.copy(pi_init)
+        
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        interval = int(Nt / freq)
+        count = 1
+        for n in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+            # Plot the solution at every 10 time steps
+            if n == count * interval:
+                plt.plot(self.x_arr, pi_prod, label=f"t={n*ht:.2f}")
+                count += 1
+            
+        # Plot formatting
+        plt.xlabel("x")
+        plt.ylabel(f"$\pi$(x,t)")
+        plt.title(f"transform matrix evlove probability distribution (ReRe)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+
+class TransferMatrix_ReAb:
+    def __init__(self, hx, x_arr, beta_U, criteria=0):
+        """
+        criteria == 0:  Original Metropolis Acceptance Criterion
+        criteria == 1:  Analytical Acceptance Criterion
+
+        Transfer matrix won't use time step size ht
+        """
+        self.hx = hx
+        self.x_arr = x_arr
+        # beta_U is a function, can be called by beta_U(arr)
+        self.beta_U = beta_U
+        self.criteria = criteria
+        self.trans_mat = self.assemble_matrix()
+        self.eig6_w, self.eig6_v = eigs(self.trans_mat)
+        self.steady_state = 1.0/(hx*np.sum(self.eig6_v[:, 0]))*self.eig6_v[:, 0]
+        self.relax_timescale = -1.0/np.log(self.eig6_w[1])
+
+    def assemble_matrix(self):
+        beta_U_arr = self.beta_U(self.x_arr)
+        if self.criteria == 0: # Typical Metropolis Acceptance Probability
+            Aab, Aba, Aac, Aca = metro_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[:-1], k=-1)
+                + np.diag(main_diag[:-1], k=0)
+                + np.diag(Aba[:-1], k=1)
+                )
+            return trans_mat
+        
+        elif self.criteria == 1: # Analytical Acceptance Probability
+            Aab, Aba, Aac, Aca = criteria_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[:-1], k=-1)
+                + np.diag(main_diag[:-1], k=0)
+                + np.diag(Aba[:-1], k=1)
+                )
+            return trans_mat
+        
+    def plot_eigenvalues(self):
+        # Compute eigenvalues
+        num_eigenvalues = self.x_arr.size-1
+        eigenvalues, eigenvectors_mat = eigs(self.trans_mat, k=num_eigenvalues)
+
+        # Plot eigenvalues
+        plt.scatter(np.real(eigenvalues), np.imag(eigenvalues), color='blue', label='Eigenvalues')
+        plt.xlabel('Real Part')
+        plt.ylabel('Imaginary Part')
+
+        # Plot Unit circle
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='red', label='Unit Circle')
+
+        plt.title('Complex Eigenvalues and Unit Circle (ReAb)')
+        plt.grid(True)
+        plt.axis('equal')  # Ensure aspect ratio is equal
+        plt.legend()
+        plt.show()
+
+    def evolve_pi(self, pi_init, Tf):
+        pi_prod = pi_init[1: ]
+
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        for _ in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+        return pi_prod
+    
+    def plot_evolution_pi(self, pi_init, Tf, freq=10):
+        pi_prod = pi_init[ : -1]
+        
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        interval = int(Nt / freq)
+        count = 1
+        for n in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+            # Plot the solution at every 10 time steps
+            if n == count * interval:
+                plt.plot(self.x_arr[: -1], pi_prod, label=f"t={n*ht:.2f}")
+                count += 1
+            
+        # Plot formatting
+        plt.xlabel("x")
+        plt.ylabel(f"$\pi$(x,t)")
+        plt.title(f"transform matrix evlove probability distribution (ReAb)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+
+class TransferMatrix_AbRe:
+    def __init__(self, hx, x_arr, beta_U, criteria=0):
+        """
+        criteria == 0:  Original Metropolis Acceptance Criterion
+        criteria == 1:  Analytical Acceptance Criterion
+
+        Transfer matrix won't use time step size ht
+        """
+        self.hx = hx
+        self.x_arr = x_arr
+        # beta_U is a function, can be called by beta_U(arr)
+        self.beta_U = beta_U
+        self.criteria = criteria
+        self.trans_mat = self.assemble_matrix()
+        self.eig6_w, self.eig6_v = eigs(self.trans_mat)
+        self.steady_state = 1.0/(hx*np.sum(self.eig6_v[:, 0]))*self.eig6_v[:, 0]
+        self.relax_timescale = -1.0/np.log(self.eig6_w[1])
+
+    def assemble_matrix(self):
+        beta_U_arr = self.beta_U(self.x_arr)
+        if self.criteria == 0: # Typical Metropolis Acceptance Probability
+            Aab, Aba, Aac, Aca = metro_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[1:], k=-1)
+                + np.diag(main_diag[1:], k=0)
+                + np.diag(Aba[1:], k=1)
+                )
+            return trans_mat
+        
+        elif self.criteria == 1: # Analytical Acceptance Probability
+            Aab, Aba, Aac, Aca = criteria_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[1:], k=-1)
+                + np.diag(main_diag[1:], k=0)
+                + np.diag(Aba[1:], k=1)
+                )
+            return trans_mat
+        
+    def plot_eigenvalues(self):
+        # Compute eigenvalues
+        num_eigenvalues = self.x_arr.size-1
+        eigenvalues, eigenvectors_mat = eigs(self.trans_mat, k=num_eigenvalues)
+
+        # Plot eigenvalues
+        plt.scatter(np.real(eigenvalues), np.imag(eigenvalues), color='blue', label='Eigenvalues')
+        plt.xlabel('Real Part')
+        plt.ylabel('Imaginary Part')
+
+        # Plot Unit circle
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='red', label='Unit Circle')
+
+        plt.title('Complex Eigenvalues and Unit Circle (AbRe)')
+        plt.grid(True)
+        plt.axis('equal')  # Ensure aspect ratio is equal
+        plt.legend()
+        plt.show()
+
+    def evolve_pi(self, pi_init, Tf):
+        pi_prod = pi_init[1: ]
+
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        for _ in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+        
+        return pi_prod
+    
+    def plot_evolution_pi(self, pi_init, Tf, freq=10):
+        pi_prod = pi_init[1: ]
+        
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        interval = int(Nt / freq)
+        count = 1
+        for n in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+            # Plot the solution at every 10 time steps
+            if n == count * interval:
+                plt.plot(self.x_arr[1:], pi_prod, label=f"t={n*ht:.2f}")
+                count += 1
+            
+        # Plot formatting
+        plt.xlabel("x")
+        plt.ylabel(f"$\pi$(x,t)")
+        plt.title(f"transform matrix evlove probability distribution (AbRe)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+class TransferMatrix_AbAb:
+    def __init__(self, hx, x_arr, beta_U, criteria=0):
+        """
+        criteria == 0:  Original Metropolis Acceptance Criterion
+        criteria == 1:  Analytical Acceptance Criterion
+
+        Transfer matrix won't use time step size ht
+        """
+        self.hx = hx
+        self.x_arr = x_arr
+        # beta_U is a function, can be called by beta_U(arr)
+        self.beta_U = beta_U
+        self.criteria = criteria
+        self.trans_mat = self.assemble_matrix()
+        self.eig6_w, self.eig6_v = eigs(self.trans_mat)
+        self.steady_state = 1.0/(hx*np.sum(self.eig6_v[:, 0]))*self.eig6_v[:, 0]
+        self.relax_timescale = -1.0/np.log(self.eig6_w[1])
+
+    def assemble_matrix(self):
+        beta_U_arr = self.beta_U(self.x_arr)
+        if self.criteria == 0: # Typical Metropolis Acceptance Probability
+            Aab, Aba, Aac, Aca = metro_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[1: -1], k=-1)
+                + np.diag(main_diag[1: -1], k=0)
+                + np.diag(Aba[1: -1], k=1)
+                )
+            return trans_mat
+        
+        elif self.criteria == 1: # Analytical Acceptance Probability
+            Aab, Aba, Aac, Aca = criteria_accept(beta_U_arr)
+            # Assemble transfer matrix (ReRe)
+            A0_ghost, Am_ghost = 0, 0
+            ghost_Aac = np.append(A0_ghost, Aac)
+            ghost_Aab = np.append(Aab, Am_ghost)
+            main_diag = 2.0*np.ones(self.x_arr.size)-ghost_Aac-ghost_Aab
+
+            trans_mat = 0.5*(
+                np.diag(Aca[1: -1], k=-1)
+                + np.diag(main_diag[1: -1], k=0)
+                + np.diag(Aba[1: -1], k=1)
+                )
+            return trans_mat
+        
+    def plot_eigenvalues(self):
+        # Compute eigenvalues
+        num_eigenvalues = self.x_arr.size-2
+        eigenvalues, eigenvectors_mat = eigs(self.trans_mat, k=num_eigenvalues)
+
+        # Plot eigenvalues
+        plt.scatter(np.real(eigenvalues), np.imag(eigenvalues), color='blue', label='Eigenvalues')
+        plt.xlabel('Real Part')
+        plt.ylabel('Imaginary Part')
+
+        # Plot Unit circle
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='red', label='Unit Circle')
+
+        plt.title('Complex Eigenvalues and Unit Circle (AbAb)')
+        plt.grid(True)
+        plt.axis('equal')  # Ensure aspect ratio is equal
+        plt.legend()
+        plt.show()
+
+    def evolve_pi(self, pi_init, Tf):
+        pi_prod = pi_init[1: -1]
+
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        for _ in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+        
+        return pi_prod
+    
+    def plot_evolution_pi(self, pi_init, Tf, freq=10):
+        pi_prod = pi_init[1: -1]
+        
+        # set D0=0.01, delt_t depend on Criteria
+        if self.criteria == 0:
+            ht = self.hx**2/(2*0.01)
+        elif self.criteria == 1:
+            ht = self.hx**2/(4*0.01)
+        Nt = int(Tf / ht)
+
+        interval = int(Nt / freq)
+        count = 1
+        for n in range(1, Nt + 1):
+            pi_prod = self.trans_mat @ pi_prod
+            # Plot the solution at every 10 time steps
+            if n == count * interval:
+                plt.plot(self.x_arr[1:-1], pi_prod, label=f"t={n*ht:.2f}")
+                count += 1
+            
+        # Plot formatting
+        plt.xlabel("x")
+        plt.ylabel(f"$\pi$(x,t)")
+        plt.title(f"transform matrix evlove probability distribution (AbAb)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
