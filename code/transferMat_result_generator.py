@@ -40,30 +40,30 @@ def beta_U(x):
     return result
 
 # ## =========first run with Metro=============
-# rr_trans = TransferMatrix_ReRe(hx, x_arr, beta_U, 0)
-# aa_trans = TransferMatrix_AbAb(hx, x_arr, beta_U, 0)
-# ra_trans = TransferMatrix_ReAb(hx, x_arr, beta_U, 0)
-# ar_trans = TransferMatrix_AbRe(hx, x_arr, beta_U, 0)
+rr_trans = TransferMatrix_ReRe(hx, x_arr, beta_U, 0)
+aa_trans = TransferMatrix_AbAb(hx, x_arr, beta_U, 0)
+ra_trans = TransferMatrix_ReAb(hx, x_arr, beta_U, 0)
+ar_trans = TransferMatrix_AbRe(hx, x_arr, beta_U, 0)
 
-# # Define the folder path
-# # folder_path = 'graphs/convex_potential/transferMat_Metro'
-# # folder_path = 'graphs/concave_potential/transferMat_Metro'
-# # folder_path = 'graphs/Gaussian_potential/transferMat_Metro'
-# # folder_path = 'graphs/diffusion_only/transferMat_Metro'
+# Define the folder path
+# folder_path = 'graphs/convex_potential/transferMat_Metro'
+# folder_path = 'graphs/concave_potential/transferMat_Metro'
+folder_path = 'graphs/Gaussian_potential/transferMat_Metro'
+# folder_path = 'graphs/diffusion_only/transferMat_Metro'
 
 
 
 # # ===========second run param: with different criteria============
-rr_trans = TransferMatrix_ReRe(hx, x_arr, beta_U, 1)
-aa_trans = TransferMatrix_AbAb(hx, x_arr, beta_U, 1)
-ra_trans = TransferMatrix_ReAb(hx, x_arr, beta_U, 1)
-ar_trans = TransferMatrix_AbRe(hx, x_arr, beta_U, 1)
+# rr_trans = TransferMatrix_ReRe(hx, x_arr, beta_U, 1)
+# aa_trans = TransferMatrix_AbAb(hx, x_arr, beta_U, 1)
+# ra_trans = TransferMatrix_ReAb(hx, x_arr, beta_U, 1)
+# ar_trans = TransferMatrix_AbRe(hx, x_arr, beta_U, 1)
 
-# Define the folder path
-# folder_path = 'graphs/convex_potential/transferMat_Criteria'
-# folder_path = 'graphs/concave_potential/transferMat_Criteria'
-folder_path = 'graphs/Gaussian_potential/transferMat_Criteria'
-# folder_path = 'graphs/diffusion_only/transferMat_Criteria'
+# # Define the folder path
+# # folder_path = 'graphs/convex_potential/transferMat_Criteria'
+# # folder_path = 'graphs/concave_potential/transferMat_Criteria'
+# # folder_path = 'graphs/Gaussian_potential/transferMat_Criteria'
+# # folder_path = 'graphs/diffusion_only/transferMat_Criteria'
 
 
 plt.plot(x_arr, rr_trans.steady_state, label="RR")
