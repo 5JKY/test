@@ -35,8 +35,8 @@ Tf = 50
 def beta_U(x):
     # result = 10*x**2-10*x  # convex potential
     # result = -10*x**2+10*x  # concave potential
-    # result = gaussian(x, A=-2, mu=L/4, sigma=0.1)+gaussian(x, A=-3, mu=0.8, sigma=0.2) # Gaussian potential
-    result = 0*x # diffusion only
+    result = gaussian(x, A=-2, mu=L/4, sigma=0.1)+gaussian(x, A=-3, mu=0.8, sigma=0.2) # Gaussian potential
+    # result = 0*x # diffusion only
     return result
 
 # ## =========first run with Metro=============
@@ -62,15 +62,15 @@ ar_trans = TransferMatrix_AbRe(hx, x_arr, beta_U, 1)
 # Define the folder path
 # folder_path = 'graphs/convex_potential/transferMat_Criteria'
 # folder_path = 'graphs/concave_potential/transferMat_Criteria'
-# folder_path = 'graphs/Gaussian_potential/transferMat_Criteria'
-folder_path = 'graphs/diffusion_only/transferMat_Criteria'
+folder_path = 'graphs/Gaussian_potential/transferMat_Criteria'
+# folder_path = 'graphs/diffusion_only/transferMat_Criteria'
 
 
 plt.plot(x_arr, rr_trans.steady_state, label="RR")
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector Corresponding to the largest Eigenvalue(= {rr_trans.eig6_w[0].real.round(3)})')
+plt.title(f'The Eigenvector of the first LM Eigenvalue(= {rr_trans.eig6_w[0].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -78,12 +78,23 @@ plt.tight_layout()
 plt.savefig(os.path.join(folder_path, 'transferMat_steady_rr.png'))  # Save as PNG file
 plt.show() ##########
 
+plt.plot(x_arr, 1.0/(hx*np.sum(rr_trans.eig6_v[:, 1]))*rr_trans.eig6_v[:, 1], label="RR")
+# Plot formatting
+plt.xlabel('x')
+plt.ylabel('$ \pi(x,t) $')
+plt.title(f'The Eigenvector of the second LM Eigenvalue(= {rr_trans.eig6_w[1].real.round(6)})')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+# Save the figure
+plt.savefig(os.path.join(folder_path, 'transferMat_eigv2_rr.png'))  # Save as PNG file
+plt.show() ##########
 
 plt.plot(x_arr[1:-1], aa_trans.steady_state, label="AA")
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the only negative Eigenvalue(= {aa_trans.eig6_w[0].real.round(6)})')
+plt.title(f'The Eigenvector of the first LM Eigenvalue(= {aa_trans.eig6_w[0].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -96,7 +107,7 @@ plt.plot(x_arr[1:-1], 1.0/(hx*np.sum(aa_trans.eig6_v[:, 1]))*aa_trans.eig6_v[:, 
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the largest Eigenvalue(= {aa_trans.eig6_w[1].real.round(6)})')
+plt.title(f'The Eigenvector of the second LM Eigenvalue(= {aa_trans.eig6_w[1].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -109,7 +120,7 @@ plt.plot(x_arr[:-1], ra_trans.steady_state, label="RA")
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the only negative Eigenvalue(= {ra_trans.eig6_w[0].real.round(6)})')
+plt.title(f'The Eigenvector of the first LM Eigenvalue(= {ra_trans.eig6_w[0].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -122,7 +133,7 @@ plt.plot(x_arr[:-1], 1.0/(hx*np.sum(ra_trans.eig6_v[:, 1]))*ra_trans.eig6_v[:, 1
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the largest Eigenvalue(= {ra_trans.eig6_w[1].real.round(6)})')
+plt.title(f'The Eigenvector of the second LM Eigenvalue(= {ra_trans.eig6_w[1].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -135,7 +146,7 @@ plt.plot(x_arr[1:], ar_trans.steady_state, label="AR")
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the only negative Eigenvalue(= {ar_trans.eig6_w[0].real.round(6)})')
+plt.title(f'The Eigenvector of the first LM Eigenvalue(= {ar_trans.eig6_w[0].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -148,7 +159,7 @@ plt.plot(x_arr[1:], 1.0/(hx*np.sum(ar_trans.eig6_v[:, 1]))*ar_trans.eig6_v[:, 1]
 # Plot formatting
 plt.xlabel('x')
 plt.ylabel('$ \pi(x,t) $')
-plt.title(f'The Eigenvector of the largest Eigenvalue(= {ar_trans.eig6_w[1].real.round(6)})')
+plt.title(f'The Eigenvector of the second LM Eigenvalue(= {ar_trans.eig6_w[1].real.round(6)})')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -187,6 +198,6 @@ plt.grid(True)
 plt.tight_layout()
 
 # Save the figure
-plt.savefig(os.path.join(folder_path, 'transferMat_boudaries.png'))  # Save as PNG file
+#plt.savefig(os.path.join(folder_path, 'transferMat_boudaries.png'))  # Save as PNG file
 
 plt.show()

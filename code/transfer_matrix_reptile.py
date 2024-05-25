@@ -52,7 +52,7 @@ class TransferMatrix_ReRe:
         self.beta_U = beta_U
         self.criteria = criteria
         self.trans_mat = self.assemble_matrix()
-        self.eig6_w, self.eig6_v = eigs(self.trans_mat)
+        self.eig6_w, self.eig6_v = eigs(self.trans_mat, k=6, which='LM')
         self.steady_state = 1.0/(hx*np.sum(self.eig6_v[:, 0]))*self.eig6_v[:, 0]
         self.relax_timescale = -1.0/np.log(self.eig6_w[1])
 
