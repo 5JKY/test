@@ -99,7 +99,7 @@ x_rr, y_rr = walk_ensemble1.simulate_ReRe(tf)
 
 
 ##### AbAb
-plt.plot(x_arr[1:-1], aa_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
+plt.plot(x_arr[1:-1], aa_trans.evolve_pi(u0, Tf=tf), label=f"transMat0", marker="o", linestyle='-', markevery=20)
 plt.plot(x_aa, y_aa, label=f"Metro walk", linestyle='--')
 plt.plot(x_arr, aa_sol.solve(Tf=tf), label=f"{aa_sol.method_name}", marker="*", linestyle='-', markevery=30)
 
@@ -116,7 +116,7 @@ plt.show()
 
 
 ##### ReRe
-plt.plot(x_arr, rr_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
+plt.plot(x_arr, rr_trans.evolve_pi(u0, Tf=tf), label=f"transMat0", marker="o", linestyle='-', markevery=20)
 plt.plot(x_rr, y_rr, label=f"Metro walk", linestyle='--')
 plt.plot(x_arr, rr_sol.solve(Tf=tf), label=f"{rr_sol.method_name}", marker="*", linestyle='-', markevery=30)
 
@@ -133,7 +133,7 @@ plt.show()
 
 
 ########## AbRe
-plt.plot(x_arr[1:], ar_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
+plt.plot(x_arr[1:], ar_trans.evolve_pi(u0, Tf=tf), label=f"transMat0", marker="o", linestyle='-', markevery=20)
 plt.plot(x_ar, y_ar, label=f"Metro walk", linestyle='--')
 plt.plot(x_arr, ar_sol.solve(Tf=tf), label=f"{ar_sol.method_name}", marker="^", linestyle='-', markevery=30)
 # Plot formatting
@@ -150,7 +150,7 @@ plt.show()
 
 
 ########## ReAb
-plt.plot(x_arr[:-1], ra_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
+plt.plot(x_arr[:-1], ra_trans.evolve_pi(u0, Tf=tf), label=f"transMat0", marker="o", linestyle='-', markevery=20)
 plt.plot(x_ra, y_ra, label=f"Metro walk", linestyle='--')
 plt.plot(x_arr, ra_sol.solve(Tf=tf), label=f"{ra_sol.method_name}", marker="^", linestyle='-', markevery=30)
 # Plot formatting
@@ -183,8 +183,8 @@ x_rr, y_rr = walk_ensemble2.simulate_ReRe(tf)
 
 
 ##### AbAb
-plt.plot(x_arr[1:-1], aa_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
-plt.plot(x_aa, y_aa, label=f"Metro walk", linestyle='--')
+plt.plot(x_arr[1:-1], aa_trans.evolve_pi(u0, Tf=tf), label=f"transMat1", marker="o", linestyle='-', markevery=20)
+plt.plot(x_aa, y_aa, label=f"Criteria walk", linestyle='--')
 plt.plot(x_arr, aa_sol.solve(Tf=tf), label=f"{aa_sol.method_name}", marker="*", linestyle='-', markevery=30)
 
 # Plot formatting
@@ -200,8 +200,8 @@ plt.show()
 
 
 ##### ReRe
-plt.plot(x_arr, rr_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
-plt.plot(x_rr, y_rr, label=f"Metro walk", linestyle='--')
+plt.plot(x_arr, rr_trans.evolve_pi(u0, Tf=tf), label=f"transMat1", marker="o", linestyle='-', markevery=20)
+plt.plot(x_rr, y_rr, label=f"Criteria walk", linestyle='--')
 plt.plot(x_arr, rr_sol.solve(Tf=tf), label=f"{rr_sol.method_name}", marker="*", linestyle='-', markevery=30)
 
 # Plot formatting
@@ -217,8 +217,8 @@ plt.show()
 
 
 ########## AbRe
-plt.plot(x_arr[1:], ar_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
-plt.plot(x_ar, y_ar, label=f"Metro walk", linestyle='--')
+plt.plot(x_arr[1:], ar_trans.evolve_pi(u0, Tf=tf), label=f"transMat1", marker="o", linestyle='-', markevery=20)
+plt.plot(x_ar, y_ar, label=f"Criteria walk", linestyle='--')
 plt.plot(x_arr, ar_sol.solve(Tf=tf), label=f"{ar_sol.method_name}", marker="^", linestyle='-', markevery=30)
 # Plot formatting
 plt.xlabel('x')
@@ -234,8 +234,8 @@ plt.show()
 
 
 ########## ReAb
-plt.plot(x_arr[:-1], ra_trans.evolve_pi(u0, Tf=tf), label=f"transMat", marker="o", linestyle='-', markevery=20)
-plt.plot(x_ra, y_ra, label=f"Metro walk", linestyle='--')
+plt.plot(x_arr[:-1], ra_trans.evolve_pi(u0, Tf=tf), label=f"transMat1", marker="o", linestyle='-', markevery=20)
+plt.plot(x_ra, y_ra, label=f"Criteria walk", linestyle='--')
 plt.plot(x_arr, ra_sol.solve(Tf=tf), label=f"{ra_sol.method_name}", marker="^", linestyle='-', markevery=30)
 # Plot formatting
 plt.xlabel('x')
