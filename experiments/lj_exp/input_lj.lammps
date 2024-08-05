@@ -1,0 +1,45 @@
+# LAMMPS input script
+
+# PART A - ENERGY MINIMIZATION
+# 1) Initialization
+units lj
+dimension 3
+atom_style atomic
+pair_style lj/cut 2.5
+boundary p p p
+
+# 2) System definition
+variable N equal 4000
+variable L equal 16.1477542
+variable rho equal ${N}/${L}^3
+region simulation_box block 0 ${L} 0 ${L} 0 ${L}
+create_box 1 simulation_box
+create_atoms 1 random ${N} 123456 simulation_box
+
+# 3) Simulation settings
+mass 1 1.0
+pair_coeff 1 1 1.0 1.0
+
+# 4) Visualization
+thermo 1
+thermo_style custom step temp pe ke etotal press
+
+# 5) Run
+log log.min
+minimize 1.0e-4 1.0e-6 1000 10000
+
+# PART B - MOLECULAR DYNAMICS
+reset_timestep 0
+# 4) Visualization
+thermo 50
+thermo_style custom step temp pe ke etotal press
+
+# 5) Run
+log log.0
+velocity all create 1.2 12345 mom yes rot yes dist gaussian
+# NVT simulation at T = 1.2 (till equilibration)
+fix mynve all nve
+fix mylgv all langevin 1.2 1.2 0.1 12345 zero yes
+timestep 0.001
+run 5000
+write_data config.data

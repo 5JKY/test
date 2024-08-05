@@ -1,0 +1,29 @@
+# 1) Initialization
+units lj
+dimension 3
+atom_style atomic
+pair_style lj/cut 2.5
+boundary p p p
+
+# 2) System definition
+variable a loop 6
+# Define temperatures
+variable t index 1.1 1.0 0.9 0.8 0.7 0.6
+
+# 4) Visualization
+thermo 50
+
+# 5) Run
+log log.$a
+read_data config.data
+thermo_style custom step temp pe ke etotal press
+velocity all create $t 12345 mom yes rot yes dist gaussian
+# NVT simulation at T = $t (till equilibration)
+fix mynve all nve
+fix mylgv all langevin $t $t 0.1 12345 zero yes
+timestep 0.001
+run 5000
+clear
+next t
+next a
+jump SELF

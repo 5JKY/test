@@ -1,0 +1,21 @@
+LAMMPS (29 Sep 2021 - Update 2)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+# 1) Initialization
+units lj
+dimension 3
+atom_style atomic
+pair_style lj/cut 2.5
+boundary p p p
+
+# 2) System definition
+variable a loop 6
+# Define temperatures
+variable t index 1.1 1.0 0.9 0.8 0.7 0.6
+
+# 4) Visualization
+thermo 50
+
+# 5) Run
+log log.$a
+log log.1
