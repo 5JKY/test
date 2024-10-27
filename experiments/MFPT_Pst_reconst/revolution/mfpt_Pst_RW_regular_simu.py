@@ -65,13 +65,14 @@ def simulate_AbInAb_regular(init_point, num_particles, beta_U, n_arr, b1, b2, hx
                     count_n[idx_n] += 1
         # Use np.where() to find indices of walkers escape from the left absorbing boundaries
         left_return_mask = (position_arr < b1+step_size/4) & (flag_escape_arr<1)
-        flag_escape_arr[left_return_mask] -= 1 
+        flag_escape_arr[left_return_mask] -= 1
+        # counting the contribution of left recycling step 
         position_arr[left_return_mask] = init_point
         left_iter_count_arr[left_return_mask] += 1
         right_iter_count_arr[left_return_mask] += 1
         count_n[init_id] += np.sum(left_return_mask)
-        indices = np.where(position_arr < b1+step_size/4)
         # Each simulation is aborted when the walker escape from left after visiting right absoring boundary
+        indices = np.where(position_arr < b1+step_size/4)
         abort_ti_n = np.append(abort_ti_n, ti_n[indices])
         ti_n = np.delete(ti_n, indices, axis=0)
         position_arr = np.delete(position_arr, indices)
@@ -81,12 +82,13 @@ def simulate_AbInAb_regular(init_point, num_particles, beta_U, n_arr, b1, b2, hx
 
         right_return_mask = (position_arr > b2-step_size/4) & (flag_escape_arr>-1)
         flag_escape_arr[right_return_mask] += 1
+        # counting the contribution of left recycling step 
         position_arr[right_return_mask] = init_point
         left_iter_count_arr[right_return_mask] += 1
         right_iter_count_arr[right_return_mask] += 1
         count_n[init_id] += np.sum(right_return_mask)
-        indices = np.where(position_arr > b2-step_size/4)
         # Each simulation is aborted when the walker escape from left after visiting right absoring boundary
+        indices = np.where(position_arr > b2-step_size/4)
         abort_ti_n = np.append(abort_ti_n, ti_n[indices])
         ti_n = np.delete(ti_n, indices, axis=0)
         position_arr = np.delete(position_arr, indices)
