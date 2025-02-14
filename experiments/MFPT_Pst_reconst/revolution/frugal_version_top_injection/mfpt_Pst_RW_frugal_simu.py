@@ -16,7 +16,7 @@ def simulate_AbInAb_regular(init_point, num_particles, beta_U, n_arr, b1, b2, hx
     init_id = np.where(n_arr == init_point)[0][0]
     n1_arr = n_arr[ :init_id+1]
     n2_arr = n_arr[init_id: ]
-    # count the number of particles fall on the left region amd right region seperately
+    # count the number of particles fall on the left region and right region seperately
     # 2d array of histogram: each raw is for one experiment, each column is for one accounted position
     count_n1 = np.zeros((num_particles, n1_arr.size))
     count_n2 = np.zeros((num_particles, n2_arr.size))
